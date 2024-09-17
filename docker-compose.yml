@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  outre_tg_bot:
+    image: 777.6.5.3:5579/bots/bot:latest
+    container_name: bot_1
+    ports:
+      - "8010:8010"
+    restart: always
+    volumes:
+      - /share/need_path:/share/need_path
+

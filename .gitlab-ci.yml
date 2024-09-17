@@ -1,0 +1,41 @@
+stages:
+  - build
+  - notify-error
+
+variables:
+  DATE: 'date +%Y-%m-%d-%H-%M-%S'
+
+build:
+  stage: build
+  tags:
+    - builder
+  image: docker:stable
+  services:
+    - docker:dind
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      variables:
+        TAG: 'latest'
+    - if: $CI_COMMIT_BRANCH == "dev"
+      variables:
+        TAG: 'latest-dev'
+  script:
+    - apk update && apk add curl
+    - export CI_BUILD_DATE=$($DATE)
+    - docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD} ${REGISTRY_HOST}
+    - docker build --no-cache -f Dockerfile -t ${IMAGE_NAME}:${TAG} --build-arg AIRFLOW_PASSWORD=${AIRFLOW_PASSWORD} --build-arg AIRFLOW_USER=${AIRFLOW_USER} --build-arg DATABASE_MH=${DATABASE_MH} --build-arg PASSWORD_MH=${PASSWORD_MH} --build-arg USER_NAME_MH=${USER_NAME_MH} --build-arg PORT_MH=${PORT_MH} --build-arg HOST_MH=${HOST_MH} --build-arg DATABASE_PG=${DATABASE_PG} --build-arg PASSWORD_PG=${PASSWORD_PG} --build-arg USER_NAME_PG=${USER_NAME_PG} --build-arg PORT_PG=${PORT_PG} --build-arg HOST_PG=${HOST_PG} --build-arg PORT_CLICKHOUSE=${PORT_CLICKHOUSE} --build-arg HOST_CLICKHOUSE=${HOST_CLICKHOUSE} --build-arg DAG_BARIER=${DAG_BARIER} --build-arg TOKEN=${TOKEN} --build-arg TRIGGER_URL=${TRIGGER_URL} --build-arg ID_SERVICE=${ID_SERVICE} .
+    - docker push ${IMAGE_NAME}:${TAG}
+    - docker logout ${REGISTRY_HOST}
+    - docker system prune -a -f --volumes
+    - 'curl -X POST -H "Content-Type: application/json" -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID_DEVOPS}\", \"text\": \"${NOTIFY_TELEGRAM} ${NOTIFY_TELEGRAM_SUCCESS}\"}" ${TELEGRAM_API_BOT_TOKEN}'
+
+
+notify_error:
+  stage: notify-error
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - apk update && apk add curl
+    - 'curl -X POST -H "Content-Type: application/json" -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID_DEVOPS}\", \"text\": \"${NOTIFY_TELEGRAM} ${NOTIFY_TELEGRAM_ERROR}\"}" ${TELEGRAM_API_BOT_TOKEN}'
+  when: on_failure

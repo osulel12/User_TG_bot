@@ -1,0 +1,58 @@
+FROM python:3.10-slim-bullseye
+
+RUN apt update ; apt upgrade -y
+RUN apt install -y curl iputils-ping telnet
+RUN apt autoremove -y ; apt clean ; apt autoclean
+
+WORKDIR /bot
+
+COPY requirements.txt /bot/requirements.txt
+
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir --upgrade -r /bot/requirements.txt
+
+COPY . /bot
+
+
+ARG AIRFLOW_PASSWORD
+ENV AIRFLOW_PASSWORD ${AIRFLOW_PASSWORD}
+ARG AIRFLOW_USER
+ENV AIRFLOW_USER ${AIRFLOW_USER}
+ARG DATABASE_MH
+ENV DATABASE_MH ${DATABASE_MH}
+ARG PASSWORD_MH
+ENV PASSWORD_MH ${PASSWORD_MH}
+ARG USER_NAME_MH
+ENV USER_NAME_MH ${USER_NAME_MH}
+ARG PORT_MH
+ENV PORT_MH ${PORT_MH}
+ARG HOST_MH
+ENV HOST_MH ${HOST_MH}
+ARG DATABASE_PG
+ENV DATABASE_PG ${DATABASE_PG}
+ARG PASSWORD_PG
+ENV PASSWORD_PG ${PASSWORD_PG}
+ARG USER_NAME_PG
+ENV USER_NAME_PG ${USER_NAME_PG}
+ARG PORT_PG
+ENV PORT_PG ${PORT_PG}
+ARG HOST_PG
+ENV HOST_PG ${HOST_PG}
+ARG PORT_CLICKHOUSE
+ENV PORT_CLICKHOUSE ${PORT_CLICKHOUSE}
+ARG HOST_CLICKHOUSE
+ENV HOST_CLICKHOUSE ${HOST_CLICKHOUSE}
+
+ARG DAG_BARIER
+ENV DAG_BARIER ${DAG_BARIER}
+ARG TOKEN
+ENV TOKEN ${TOKEN}
+ARG TRIGGER_URL
+ENV TRIGGER_URL ${TRIGGER_URL}
+ARG ID_SERVICE
+ENV ID_SERVICE ${ID_SERVICE}
+
+
+#HEALTHCHECK --start-period=30s --interval=20s --timeout=10s --retries=3 CMD curl -f http://localhost:8010/ping || exit 1
+EXPOSE 8010
+CMD ["python", "main.py"]
